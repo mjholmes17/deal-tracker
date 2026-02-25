@@ -7,7 +7,8 @@ export async function middleware(req: NextRequest) {
   // Allow login page and auth API routes
   if (
     pathname === "/login" ||
-    pathname.startsWith("/api/auth/")
+    pathname.startsWith("/api/auth/") ||
+    pathname === "/api/deals/refresh"
   ) {
     return NextResponse.next();
   }
