@@ -36,6 +36,26 @@ export const NEWS_SOURCES: ScraperSource[] = [
     url: "https://www.axios.com/pro/deals",
     type: "news",
   },
+  {
+    name: "TechCrunch - Venture",
+    url: "https://techcrunch.com/category/venture/",
+    type: "news",
+  },
+  {
+    name: "Crunchbase News - Funding",
+    url: "https://news.crunchbase.com/venture/",
+    type: "news",
+  },
+  {
+    name: "PitchBook News",
+    url: "https://pitchbook.com/news",
+    type: "news",
+  },
+  {
+    name: "Fortune Term Sheet",
+    url: "https://fortune.com/tag/term-sheet/",
+    type: "news",
+  },
 ];
 
 export const COMPETITOR_FIRM_URLS: ScraperSource[] = [
