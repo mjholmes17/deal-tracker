@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e3a5f;
+  --color-brand-900: #0f2440;
+  --color-brand-950: #091628;
+
+  --color-surface: #f8fafc;
+  --color-surface-raised: #ffffff;
+  --color-surface-overlay: #ffffff;
+
+  --color-border-default: #e2e8f0;
+  --color-border-subtle: #f1f5f9;
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  --color-text-inverse: #ffffff;
+}
+
+* {
+  border-color: var(--color-border-default);
+}
+
+body {
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+/* Custom scrollbar for the table */
+.deal-table-wrap::-webkit-scrollbar {
+  height: 8px;
+}
+.deal-table-wrap::-webkit-scrollbar-track {
+  background: var(--color-surface);
+  border-radius: 4px;
+}
+.deal-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--color-brand-200);
+  border-radius: 4px;
+}
+.deal-table-wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--color-brand-300);
+}
+
+/* Undo toast entrance */
+@keyframes slide-up {
+  from { opacity: 0; transform: translate(-50%, 16px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.toast-enter {
+  animation: slide-up 0.25s ease-out;
+}

@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Deal {
+  id            String    @id @default(uuid())
+  date          DateTime  @db.Date
+  company_name  String    @db.VarChar(255)
+  investor      String    @db.VarChar(255)
+  amount_raised Decimal?  @db.Decimal(15, 2)
+  end_market    String    @db.VarChar(100)
+  description   String    @db.Text
+  source_url    String    @db.VarChar(500)
+  status        String?   @db.VarChar(50)
+  comments      String    @default("") @db.Text
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
+  deleted_at    DateTime?
+
+  @@map("deals")
+}
+
+model ScrapeSource {
+  id              String    @id @default(uuid())
+  name            String    @db.VarChar(255)
+  url             String    @db.VarChar(500)
+  source_type     String    @db.VarChar(20)
+  is_active       Boolean   @default(true)
+  last_scraped_at DateTime?
+
+  @@map("scrape_sources")
+}
