@@ -105,6 +105,11 @@ export function DealPage({ initialDeals }: DealPageProps) {
               </svg>
               {refreshing ? "Scanning..." : "Refresh Deals"}
             </button>
+            {refreshing && (
+              <span className="text-xs text-brand-300">
+                Crawling the web — this may take a few minutes
+              </span>
+            )}
             <button
               onClick={() => setModalOpen(true)}
               className="px-4 py-2 bg-brand-500 hover:bg-brand-400 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
