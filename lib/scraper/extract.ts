@@ -16,23 +16,26 @@ export interface ExtractedDeal {
   source_url: string;
 }
 
-const EXTRACTION_PROMPT = `You are a growth equity deal extraction assistant. Analyze the following text scraped from a news source or investment firm website and extract any growth equity / private equity deals announced.
+const EXTRACTION_PROMPT = `You are a growth equity deal extraction assistant. Analyze the following text and extract ONLY deals that are clearly NEW investment announcements — meaning there is explicit language like "announces investment in", "closes funding round", "raises Series X", "secures growth equity investment", or similar.
 
-For EACH deal found, extract:
+For EACH confirmed new deal announcement, extract:
 - company_name: The portfolio company receiving investment
-- investor: The PE/growth equity firm investing (must be one of the tracked firms if from a firm page)
+- investor: The PE/growth equity firm investing
 - amount_raised: Dollar amount in USD (number only, no formatting). Use null if undisclosed.
 - end_market: Classify into exactly one of these categories: {end_markets}
 - description: 1-2 sentence summary of what the company does
-- date: The actual deal announcement or close date in YYYY-MM-DD format. Look for dates in the text such as press release dates, "announced today" references, or explicit close dates. If you absolutely cannot determine the date, skip the deal entirely — do NOT use today's date as a fallback.
+- date: The actual announcement or close date in YYYY-MM-DD format. This MUST come from the text itself (e.g. press release date, "announced January 15", article publication date). NEVER use today's date as a fallback. If you cannot find a specific date in the text, skip the deal entirely.
 - source_url: The URL this was scraped from (provided below)
 
-IMPORTANT RULES:
+CRITICAL RULES:
+- ONLY extract deals that are clearly NEW announcements with announcement language and a verifiable date
+- Do NOT extract companies simply listed on a portfolio page, team page, or case study — these are existing investments, not new deals
+- Do NOT extract deals where the only evidence is a company name appearing in a list of portfolio companies
 - Only extract GROWTH EQUITY or PRIVATE EQUITY deals (not venture/seed, not M&A/acquisitions, not debt)
 - The investor must be a PE/growth equity firm, not a strategic acquirer
-- Skip deals older than 3 days
+- Skip deals with announcement dates older than 3 days from today's date
 - Skip duplicate mentions of the same deal
-- If no relevant deals are found, return an empty array
+- If no confirmed new deal announcements are found, return an empty array
 
 Source name: {source_name}
 Source URL: {source_url}
