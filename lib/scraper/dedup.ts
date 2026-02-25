@@ -68,7 +68,27 @@ function isDuplicate(
 }
 
 /**
- * Filter out duplicate deals from the extracted list.
+ * Check if a deal is invalid (e.g. a firm "investing in" itself).
+ */
+function isInvalidDeal(deal: ExtractedDeal): boolean {
+  const name = (deal.company_name || "").toLowerCase();
+  const investor = (deal.investor || "").toLowerCase();
+
+  if (!name || !investor) return true;
+
+  // Reject if company name and investor are too similar (firm investing in itself)
+  if (token_set_ratio(name, investor) >= 80) {
+    console.log(
+      `  [SKIP] Invalid: "${deal.company_name}" matches investor "${deal.investor}"`
+    );
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Filter out duplicate and invalid deals from the extracted list.
  * Also prevents intra-batch duplicates by adding each new deal to the existing list.
  */
 export function deduplicateDeals(
@@ -80,7 +100,9 @@ export function deduplicateDeals(
   let skipped = 0;
 
   for (const deal of extracted) {
-    if (isDuplicate(deal, knownDeals)) {
+    if (isInvalidDeal(deal)) {
+      skipped++;
+    } else if (isDuplicate(deal, knownDeals)) {
       console.log(
         `  [SKIP] Duplicate: ${deal.company_name} / ${deal.investor}`
       );
