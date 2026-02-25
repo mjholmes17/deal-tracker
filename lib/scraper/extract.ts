@@ -30,7 +30,7 @@ For EACH deal found, extract:
 IMPORTANT RULES:
 - Only extract GROWTH EQUITY or PRIVATE EQUITY deals (not venture/seed, not M&A/acquisitions, not debt)
 - The investor must be a PE/growth equity firm, not a strategic acquirer
-- Skip deals older than 30 days
+- Skip deals older than 3 days
 - Skip duplicate mentions of the same deal
 - If no relevant deals are found, return an empty array
 
