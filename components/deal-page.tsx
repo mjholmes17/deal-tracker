@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { Deal } from "@/lib/types";
 import { DealTable } from "./deal-table";
 import { AddDealModal } from "./add-deal-modal";
@@ -13,10 +13,47 @@ interface DealPageProps {
 export function DealPage({ initialDeals }: DealPageProps) {
   const [deals, setDeals] = useState<Deal[]>(initialDeals);
   const [modalOpen, setModalOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshResult, setRefreshResult] = useState<string | null>(null);
 
   const handleAdd = (deal: Deal) => {
     setDeals((prev) => [deal, ...prev]);
   };
+
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setRefreshResult(null);
+    try {
+      const res = await fetch("/api/deals/refresh", { method: "POST" });
+      const data = await res.json();
+
+      if (data.success) {
+        // Re-fetch all deals to pick up any new ones
+        const dealsRes = await fetch("/api/deals");
+        if (dealsRes.ok) {
+          const freshDeals = await dealsRes.json();
+          setDeals(
+            freshDeals.map((d: Record<string, unknown>) => ({
+              ...d,
+              amount_raised: d.amount_raised ? Number(d.amount_raised) : null,
+            }))
+          );
+        }
+        setRefreshResult(
+          data.newDeals > 0
+            ? `Found ${data.newDeals} new deal(s)!`
+            : "No new deals found."
+        );
+      } else {
+        setRefreshResult("Refresh failed. Check server logs.");
+      }
+    } catch {
+      setRefreshResult("Refresh failed. Is the scraper configured?");
+    } finally {
+      setRefreshing(false);
+      setTimeout(() => setRefreshResult(null), 5000);
+    }
+  }, []);
 
   const newCount = deals.filter((d) => d.status === null).length;
   const reviewedCount = deals.filter((d) => d.status !== null).length;
@@ -45,6 +82,29 @@ export function DealPage({ initialDeals }: DealPageProps) {
               <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full" />
               Last scan: today 9:00 AM
             </div>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="px-3 py-2 bg-brand-800/60 hover:bg-brand-700/80 disabled:opacity-50 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+              title="Run scraper to find new deals"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 16 16"
+                fill="none"
+                className={refreshing ? "animate-spin" : ""}
+              >
+                <path
+                  d="M14 8A6 6 0 112.34 5M14 2v3.5h-3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+              {refreshing ? "Scanning..." : "Refresh Deals"}
+            </button>
             <button
               onClick={() => setModalOpen(true)}
               className="px-4 py-2 bg-brand-500 hover:bg-brand-400 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
@@ -79,6 +139,22 @@ export function DealPage({ initialDeals }: DealPageProps) {
         onClose={() => setModalOpen(false)}
         onAdd={handleAdd}
       />
+
+      {/* Refresh result toast */}
+      {refreshResult && (
+        <div className="toast-enter fixed bottom-6 left-1/2 -translate-x-1/2 bg-brand-900 text-white px-5 py-3 rounded-xl shadow-2xl flex items-center gap-3 text-sm z-50 border border-brand-700">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-brand-300 shrink-0">
+            <path
+              d="M14 8A6 6 0 112.34 5M14 2v3.5h-3.5"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>{refreshResult}</span>
+        </div>
+      )}
     </>
   );
 }
