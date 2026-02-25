@@ -20,8 +20,10 @@ export interface ExistingDeal {
  *
  * Company name: standard ratio (>= 80)
  * Investor: token_set_ratio (>= 80) — handles "Insight" vs "Insight Partners"
- * Date: 90-day window — firm websites keep deals listed for months and Claude
- *   sometimes assigns today's date when the original date isn't in the text
+ *
+ * No date window — if the same company+investor pair exists (including
+ * soft-deleted records), it's a duplicate. Date windows caused silent NaN
+ * bugs and firm websites keep old deals listed indefinitely.
  */
 function isDuplicate(
   deal: ExtractedDeal,
@@ -29,7 +31,6 @@ function isDuplicate(
 ): boolean {
   const dealName = (deal.company_name || "").toLowerCase();
   const dealInvestor = (deal.investor || "").toLowerCase();
-  const dealDate = deal.date || "";
 
   for (const ex of existing) {
     const nameScore = ratio(
@@ -46,20 +47,7 @@ function isDuplicate(
       (ex.investor || "").toLowerCase()
     );
 
-    // Date within 14-day window
-    let withinWindow = true;
-    try {
-      const dealDt = new Date(dealDate);
-      const exDt = new Date(ex.date);
-      const diffDays = Math.abs(
-        (dealDt.getTime() - exDt.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      withinWindow = diffDays <= 90;
-    } catch {
-      withinWindow = true; // Assume overlap if dates can't be parsed
-    }
-
-    if (nameScore >= 80 && investorScore >= 80 && withinWindow) {
+    if (nameScore >= 80 && investorScore >= 80) {
       return true;
     }
   }
