@@ -29,11 +29,18 @@ export async function getSession(): Promise<boolean> {
   return verifySession(token);
 }
 
-export function validateCredentials(email: string, password: string): boolean {
-  return (
-    email === process.env.AUTH_EMAIL &&
-    password === process.env.AUTH_PASSWORD
-  );
+export async function validateCredentials(email: string, password: string): Promise<boolean> {
+  if (email !== process.env.AUTH_EMAIL) return false;
+
+  const hash = process.env.AUTH_PASSWORD_HASH;
+  if (hash) {
+    // Dynamic import to avoid loading Node.js crypto in Edge middleware
+    const { compareSync } = await import("bcryptjs");
+    return compareSync(password, hash);
+  }
+
+  // Fallback to plaintext comparison during migration (remove after setting hash)
+  return password === process.env.AUTH_PASSWORD;
 }
 
 export { SESSION_COOKIE };

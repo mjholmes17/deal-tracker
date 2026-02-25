@@ -331,7 +331,7 @@ export function DealTable({ initialDeals }: DealTableProps) {
                     />
                   </td>
                   <td className="px-2">
-                    {deal.source_url ? (
+                    {deal.source_url && /^https?:\/\//i.test(deal.source_url) ? (
                       <a
                         href={deal.source_url}
                         target="_blank"

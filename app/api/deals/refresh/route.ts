@@ -37,13 +37,11 @@ async function runScraperAndRespond(): Promise<NextResponse> {
       },
     });
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
-    console.error("Scraper failed:", message);
+    console.error("Scraper failed:", e instanceof Error ? e.message : String(e));
     return NextResponse.json(
       {
         success: false,
         message: "Scraper failed. Check server logs.",
-        error: message,
       },
       { status: 500 }
     );

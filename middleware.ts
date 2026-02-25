@@ -4,11 +4,11 @@ import { verifySession, SESSION_COOKIE } from "@/lib/auth";
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Allow login page and auth API routes
+  // Allow login page, auth API routes, and cron GET to refresh endpoint
   if (
     pathname === "/login" ||
     pathname.startsWith("/api/auth/") ||
-    pathname === "/api/deals/refresh"
+    (pathname === "/api/deals/refresh" && req.method === "GET")
   ) {
     return NextResponse.next();
   }

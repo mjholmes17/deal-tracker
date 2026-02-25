@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
 
+const ALLOWED_PATCH_FIELDS = new Set([
+  "date",
+  "company_name",
+  "investor",
+  "amount_raised",
+  "end_market",
+  "description",
+  "source_url",
+  "status",
+  "comments",
+  "deleted_at",
+]);
+
 // PATCH /api/deals/[id] — update a deal field
 export async function PATCH(
   req: NextRequest,
@@ -9,15 +22,28 @@ export async function PATCH(
   const { id } = await params;
   const body = await req.json();
 
+  // Only allow known fields — strip everything else
+  const sanitized: Record<string, unknown> = {};
+  for (const key of Object.keys(body)) {
+    if (ALLOWED_PATCH_FIELDS.has(key)) {
+      sanitized[key] = body[key];
+    }
+  }
+
+  if (Object.keys(sanitized).length === 0) {
+    return NextResponse.json({ error: "No valid fields provided" }, { status: 400 });
+  }
+
   const { data, error } = await supabase
     .from("deals")
-    .update({ ...body, updated_at: new Date().toISOString() })
+    .update({ ...sanitized, updated_at: new Date().toISOString() })
     .eq("id", id)
     .select()
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("PATCH /api/deals/[id] error:", error.message);
+    return NextResponse.json({ error: "Failed to update deal" }, { status: 500 });
   }
 
   return NextResponse.json(data);
@@ -36,7 +62,8 @@ export async function DELETE(
     .eq("id", id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("DELETE /api/deals/[id] error:", error.message);
+    return NextResponse.json({ error: "Failed to delete deal" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });
