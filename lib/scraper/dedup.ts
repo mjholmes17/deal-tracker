@@ -20,7 +20,8 @@ export interface ExistingDeal {
  *
  * Company name: standard ratio (>= 80)
  * Investor: token_set_ratio (>= 80) — handles "Insight" vs "Insight Partners"
- * Date: 14-day window (wider than before to catch re-announced deals)
+ * Date: 90-day window — firm websites keep deals listed for months and Claude
+ *   sometimes assigns today's date when the original date isn't in the text
  */
 function isDuplicate(
   deal: ExtractedDeal,
@@ -53,7 +54,7 @@ function isDuplicate(
       const diffDays = Math.abs(
         (dealDt.getTime() - exDt.getTime()) / (1000 * 60 * 60 * 24)
       );
-      withinWindow = diffDays <= 14;
+      withinWindow = diffDays <= 90;
     } catch {
       withinWindow = true; // Assume overlap if dates can't be parsed
     }
