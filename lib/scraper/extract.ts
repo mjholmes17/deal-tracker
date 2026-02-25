@@ -78,7 +78,7 @@ function parseDealsFromResponse(content: string): ExtractedDeal[] {
  */
 export async function extractDealsFromSources(
   sources: ScrapeResult[],
-  batchSize = 5
+  batchSize = 2
 ): Promise<{ deals: ExtractedDeal[]; errors: string[] }> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
