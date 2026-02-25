@@ -38,34 +38,42 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-950 px-4">
-      <div className="w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center px-4 relative overflow-hidden bg-brand-950">
+      {/* Ambient glow effects */}
+      <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-brand-800/20 blur-[120px]" />
+      <div className="absolute bottom-[-15%] right-[-5%] w-[400px] h-[400px] rounded-full bg-brand-700/10 blur-[100px]" />
+      <div className="absolute top-[30%] right-[15%] w-[200px] h-[200px] rounded-full bg-brand-500/5 blur-[80px]" />
+
+      <div className="w-full max-w-sm relative z-10">
         {/* Logo */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-brand-500 flex items-center justify-center text-white shadow-lg mb-4">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 mb-5">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
               <polyline points="16 7 22 7 22 13" />
             </svg>
           </div>
-          <h1 className="text-xl font-semibold text-white tracking-tight">
+          <h1 className="text-2xl font-semibold text-white tracking-tight">
             Growth Equity Deal Tracker
           </h1>
-          <p className="text-sm text-brand-400 mt-1">
-            Sign in to continue
+          <p className="text-sm text-brand-400 mt-2">
+            Competitive deal intelligence
           </p>
         </div>
 
         {/* Login form */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-2xl p-6 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white/[0.03] backdrop-blur-sm border border-white/[0.06] rounded-2xl shadow-2xl p-7 space-y-5"
+        >
           {error && (
-            <div className="bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-lg px-4 py-3">
+            <div className="bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm rounded-lg px-4 py-3">
               {error}
             </div>
           )}
 
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1.5">
+            <label htmlFor="email" className="block text-sm font-medium text-brand-300 mb-1.5">
               Email
             </label>
             <input
@@ -76,12 +84,12 @@ export default function LoginPage() {
               required
               autoFocus
               placeholder="Email address"
-              className="w-full px-3 py-2.5 border border-border-default rounded-lg text-sm outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              className="w-full px-3.5 py-2.5 bg-white/[0.05] border border-white/[0.08] rounded-lg text-sm text-white placeholder-brand-500 outline-none transition-all focus:border-brand-400/50 focus:ring-2 focus:ring-brand-400/10"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1.5">
+            <label htmlFor="password" className="block text-sm font-medium text-brand-300 mb-1.5">
               Password
             </label>
             <input
@@ -91,21 +99,21 @@ export default function LoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               placeholder="Password"
-              className="w-full px-3 py-2.5 border border-border-default rounded-lg text-sm outline-none transition-all focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
+              className="w-full px-3.5 py-2.5 bg-white/[0.05] border border-white/[0.08] rounded-lg text-sm text-white placeholder-brand-500 outline-none transition-all focus:border-brand-400/50 focus:ring-2 focus:ring-brand-400/10"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 disabled:bg-brand-300 text-white text-sm font-medium rounded-lg transition-colors"
+            className="w-full py-2.5 bg-gradient-to-r from-brand-500 to-brand-600 hover:from-brand-400 hover:to-brand-500 disabled:opacity-40 text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-brand-500/20"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
 
-        <p className="text-center text-xs text-brand-500 mt-6">
-          Authorized users only
+        <p className="text-center text-xs text-brand-600 mt-8 tracking-wide uppercase">
+          Authorized access only
         </p>
       </div>
     </div>

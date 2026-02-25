@@ -142,11 +142,15 @@ async function notifySlack(deals: ExtractedDeal[]) {
     return;
   }
 
-  const dealLines = deals.map((d) => {
+  const dealLines = deals.flatMap((d) => {
     const amount = d.amount_raised
       ? `$${(d.amount_raised / 1_000_000).toFixed(0)}M`
       : "undisclosed";
-    return `\u2022 *${d.company_name}* \u2014 ${d.investor} \u2014 ${amount} \u2014 ${d.end_market}`;
+    const lines = [`\u2022 *${d.company_name}* \u2014 ${d.investor} \u2014 ${amount} \u2014 ${d.end_market}`];
+    if (d.description) {
+      lines.push(`   _${d.description}_`);
+    }
+    return lines;
   });
 
   const text = [
