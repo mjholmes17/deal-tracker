@@ -103,6 +103,11 @@ export async function runScraper(): Promise<ScraperResult> {
     }
   }
 
+  // 6. Notify Slack
+  if (insertedCount > 0) {
+    await notifySlack(newDeals.slice(0, insertedCount));
+  }
+
   const durationMs = Date.now() - start;
   console.log(`\n${"=".repeat(60)}`);
   console.log(`  Done in ${(durationMs / 1000).toFixed(1)}s — ${insertedCount} new deal(s)`);
@@ -116,6 +121,45 @@ export async function runScraper(): Promise<ScraperResult> {
     errors,
     durationMs,
   };
+}
+
+async function notifySlack(deals: ExtractedDeal[]) {
+  const webhookUrl = process.env.SLACK_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.log("  [SKIP] SLACK_WEBHOOK_URL not set, skipping notification");
+    return;
+  }
+
+  const dealLines = deals.map((d) => {
+    const amount = d.amount_raised
+      ? `$${(d.amount_raised / 1_000_000).toFixed(0)}M`
+      : "undisclosed";
+    return `\u2022 *${d.company_name}* \u2014 ${d.investor} \u2014 ${amount} \u2014 ${d.end_market}`;
+  });
+
+  const text = [
+    `\ud83d\udcca *${deals.length} new deal${deals.length === 1 ? "" : "s"} found*`,
+    "",
+    ...dealLines,
+    "",
+    `<https://growthequitydeals.com|View all deals \u2192>`,
+  ].join("\n");
+
+  try {
+    const resp = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (resp.ok) {
+      console.log("  Slack notification sent");
+    } else {
+      console.log(`  [WARN] Slack notification failed: ${resp.status}`);
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.log(`  [WARN] Slack notification error: ${msg}`);
+  }
 }
 
 function dealToRow(deal: ExtractedDeal) {
