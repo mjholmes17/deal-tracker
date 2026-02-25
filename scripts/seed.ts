@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import { SAMPLE_DEALS } from "../lib/sample-data";
 

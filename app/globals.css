@@ -51,6 +51,23 @@ body {
   background: var(--color-brand-300);
 }
 
+/* Form field inputs */
+.field-input {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  border: 1px solid var(--color-border-default);
+  border-radius: 0.5rem;
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.field-input:focus {
+  border-color: var(--color-brand-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand-500) 15%, transparent);
+}
+
 /* Undo toast entrance */
 @keyframes slide-up {
   from { opacity: 0; transform: translate(-50%, 16px); }
