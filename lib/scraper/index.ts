@@ -30,7 +30,7 @@ export async function runScraper(): Promise<ScraperResult> {
   const errors: string[] = [];
 
   console.log("=".repeat(60));
-  console.log("  Wavecrest Deal Tracker — Daily Scraper (TypeScript)");
+  console.log("  Growth Equity Deal Tracker — Daily Scraper");
   console.log(`  ${new Date().toISOString()}`);
   console.log("=".repeat(60));
 
@@ -109,6 +109,18 @@ export async function runScraper(): Promise<ScraperResult> {
   }
 
   const durationMs = Date.now() - start;
+
+  // 7. Log scan completion
+  try {
+    await prisma.scanLog.create({
+      data: {
+        deals_found: insertedCount,
+        duration_ms: durationMs,
+      },
+    });
+  } catch (e) {
+    console.log(`  [WARN] Failed to log scan: ${e instanceof Error ? e.message : e}`);
+  }
   console.log(`\n${"=".repeat(60)}`);
   console.log(`  Done in ${(durationMs / 1000).toFixed(1)}s — ${insertedCount} new deal(s)`);
   console.log("=".repeat(60));

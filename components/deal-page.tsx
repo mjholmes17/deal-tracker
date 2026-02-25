@@ -8,13 +8,15 @@ import { LogoutButton } from "./logout-button";
 
 interface DealPageProps {
   initialDeals: Deal[];
+  lastScanAt: string | null;
 }
 
-export function DealPage({ initialDeals }: DealPageProps) {
+export function DealPage({ initialDeals, lastScanAt }: DealPageProps) {
   const [deals, setDeals] = useState<Deal[]>(initialDeals);
   const [modalOpen, setModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [refreshResult, setRefreshResult] = useState<string | null>(null);
+  const [lastScan, setLastScan] = useState<string | null>(lastScanAt);
 
   const handleAdd = (deal: Deal) => {
     setDeals((prev) => [deal, ...prev]);
@@ -39,6 +41,7 @@ export function DealPage({ initialDeals }: DealPageProps) {
             }))
           );
         }
+        setLastScan(new Date().toISOString());
         setRefreshResult(
           data.newDeals > 0
             ? `Found ${data.newDeals} new deal(s)!`
@@ -65,12 +68,15 @@ export function DealPage({ initialDeals }: DealPageProps) {
       <header className="bg-brand-900 text-white">
         <div className="max-w-[1700px] mx-auto px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-brand-500 flex items-center justify-center font-bold text-lg tracking-tight shadow-sm">
-              W
+            <div className="w-9 h-9 rounded-lg bg-brand-500 flex items-center justify-center shadow-sm">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+                <polyline points="16 7 22 7 22 13" />
+              </svg>
             </div>
             <div>
               <h1 className="text-base font-semibold tracking-tight leading-tight">
-                Wavecrest Deal Tracker
+                Growth Equity Deal Tracker
               </h1>
               <p className="text-xs text-brand-300 leading-tight">
                 Competitive deal intelligence
@@ -78,10 +84,12 @@ export function DealPage({ initialDeals }: DealPageProps) {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-brand-300 bg-brand-800/60 rounded-full px-3 py-1.5">
-              <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full" />
-              Last scan: today 9:00 AM
-            </div>
+            {lastScan && (
+              <div className="hidden sm:flex items-center gap-2 text-xs text-brand-300 bg-brand-800/60 rounded-full px-3 py-1.5">
+                <span className="inline-block w-2 h-2 bg-emerald-400 rounded-full" />
+                Last scan: {formatScanTime(lastScan)}
+              </div>
+            )}
             <button
               onClick={handleRefresh}
               disabled={refreshing}
@@ -162,6 +170,32 @@ export function DealPage({ initialDeals }: DealPageProps) {
       )}
     </>
   );
+}
+
+function formatScanTime(iso: string): string {
+  const date = new Date(iso);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+
+  const time = date.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) {
+    const isToday = date.toDateString() === now.toDateString();
+    return isToday ? `today ${time}` : `yesterday ${time}`;
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  }) + ` ${time}`;
 }
 
 function Stat({ label, value, accent, warn }: { label: string; value: string; accent?: boolean; warn?: boolean }) {

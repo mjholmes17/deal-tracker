@@ -80,7 +80,7 @@ function exportCsv(deals: Deal[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `wavecrest-deals-${new Date().toISOString().split("T")[0]}.csv`;
+  a.download = `deals-${new Date().toISOString().split("T")[0]}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }

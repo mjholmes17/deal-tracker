@@ -8,8 +8,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Wavecrest Deal Tracker",
-  description: "Competitive deal intelligence platform for Wavecrest Growth Partners",
+  title: "Growth Equity Deal Tracker",
+  description: "Competitive deal intelligence platform",
 };
 
 export default function RootLayout({

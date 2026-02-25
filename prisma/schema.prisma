@@ -26,6 +26,15 @@ model Deal {
   @@map("deals")
 }
 
+model ScanLog {
+  id           String   @id @default(uuid())
+  completed_at DateTime @default(now())
+  deals_found  Int      @default(0)
+  duration_ms  Int      @default(0)
+
+  @@map("scan_logs")
+}
+
 model ScrapeSource {
   id              String    @id @default(uuid())
   name            String    @db.VarChar(255)

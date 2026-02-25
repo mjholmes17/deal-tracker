@@ -42,11 +42,14 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl bg-brand-500 flex items-center justify-center font-bold text-2xl text-white shadow-lg mb-4">
-            W
+          <div className="w-12 h-12 rounded-xl bg-brand-500 flex items-center justify-center text-white shadow-lg mb-4">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="22 7 13.5 15.5 8.5 10.5 2 17" />
+              <polyline points="16 7 22 7 22 13" />
+            </svg>
           </div>
           <h1 className="text-xl font-semibold text-white tracking-tight">
-            Wavecrest Deal Tracker
+            Growth Equity Deal Tracker
           </h1>
           <p className="text-sm text-brand-400 mt-1">
             Sign in to continue
