@@ -1,8 +1,11 @@
 /**
  * Fuzzy deduplication: compare extracted deals against existing ones.
+ *
+ * Uses token_set_ratio for investor matching to handle name variations
+ * like "Insight" vs "Insight Partners" or "Lead Edge" vs "Lead Edge Capital".
  */
 
-import { ratio } from "fuzzball";
+import { ratio, token_set_ratio } from "fuzzball";
 import { ExtractedDeal } from "./extract";
 
 export interface ExistingDeal {
@@ -14,27 +17,35 @@ export interface ExistingDeal {
 
 /**
  * Check if a deal is a duplicate of any existing deal.
- * Uses fuzzy matching on company name + investor, plus a 7-day date window.
+ *
+ * Company name: standard ratio (>= 80)
+ * Investor: token_set_ratio (>= 80) — handles "Insight" vs "Insight Partners"
+ * Date: 14-day window (wider than before to catch re-announced deals)
  */
 function isDuplicate(
   deal: ExtractedDeal,
-  existing: ExistingDeal[],
-  threshold = 80
+  existing: ExistingDeal[]
 ): boolean {
+  const dealName = (deal.company_name || "").toLowerCase();
+  const dealInvestor = (deal.investor || "").toLowerCase();
   const dealDate = deal.date || "";
 
   for (const ex of existing) {
     const nameScore = ratio(
-      (deal.company_name || "").toLowerCase(),
+      dealName,
       (ex.company_name || "").toLowerCase()
     );
 
-    const investorScore = ratio(
-      (deal.investor || "").toLowerCase(),
+    // token_set_ratio handles extra words:
+    // "Insight" vs "Insight Partners" → 100
+    // "Lead Edge" vs "Lead Edge Capital" → 100
+    // "Frontier Growth" vs "Frontier Growth Partners" → 100
+    const investorScore = token_set_ratio(
+      dealInvestor,
       (ex.investor || "").toLowerCase()
     );
 
-    // Date within 7-day window
+    // Date within 14-day window
     let withinWindow = true;
     try {
       const dealDt = new Date(dealDate);
@@ -42,12 +53,12 @@ function isDuplicate(
       const diffDays = Math.abs(
         (dealDt.getTime() - exDt.getTime()) / (1000 * 60 * 60 * 24)
       );
-      withinWindow = diffDays <= 7;
+      withinWindow = diffDays <= 14;
     } catch {
       withinWindow = true; // Assume overlap if dates can't be parsed
     }
 
-    if (nameScore >= threshold && investorScore >= threshold && withinWindow) {
+    if (nameScore >= 80 && investorScore >= 80 && withinWindow) {
       return true;
     }
   }
@@ -63,7 +74,6 @@ export function deduplicateDeals(
   extracted: ExtractedDeal[],
   existing: ExistingDeal[]
 ): { newDeals: ExtractedDeal[]; skipped: number } {
-  // Work with a mutable copy so we can add new deals for intra-batch dedup
   const knownDeals: ExistingDeal[] = [...existing];
   const newDeals: ExtractedDeal[] = [];
   let skipped = 0;
@@ -76,7 +86,6 @@ export function deduplicateDeals(
       skipped++;
     } else {
       newDeals.push(deal);
-      // Add to known list to prevent intra-batch duplicates
       knownDeals.push({
         id: "",
         company_name: deal.company_name,
