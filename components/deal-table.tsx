@@ -130,20 +130,31 @@ export function DealTable({ initialDeals }: DealTableProps) {
     if (undoTimer) clearTimeout(undoTimer);
     setDeals((prev) => prev.filter((d) => d.id !== deal.id));
     setDeletedDeal(deal);
-    const timer = setTimeout(async () => {
-      try {
-        await fetch(`/api/deals/${deal.id}`, { method: "DELETE" });
-      } catch (err) {
-        console.error("Failed to delete:", err);
-      }
+    // Delete immediately so it persists across page refreshes
+    try {
+      await fetch(`/api/deals/${deal.id}`, { method: "DELETE" });
+    } catch (err) {
+      console.error("Failed to delete:", err);
+    }
+    const timer = setTimeout(() => {
       setDeletedDeal(null);
     }, UNDO_TIMEOUT_MS);
     setUndoTimer(timer);
   }, [undoTimer]);
 
-  const undoDelete = useCallback(() => {
+  const undoDelete = useCallback(async () => {
     if (!deletedDeal) return;
     if (undoTimer) clearTimeout(undoTimer);
+    // Restore by clearing deleted_at
+    try {
+      await fetch(`/api/deals/${deletedDeal.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deleted_at: null }),
+      });
+    } catch (err) {
+      console.error("Failed to undo delete:", err);
+    }
     setDeals((prev) => [...prev, deletedDeal]);
     setDeletedDeal(null);
     setUndoTimer(null);
