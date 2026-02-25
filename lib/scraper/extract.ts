@@ -24,7 +24,7 @@ For EACH deal found, extract:
 - amount_raised: Dollar amount in USD (number only, no formatting). Use null if undisclosed.
 - end_market: Classify into exactly one of these categories: {end_markets}
 - description: 1-2 sentence summary of what the company does
-- date: The announcement date in YYYY-MM-DD format. Use today's date if not specified.
+- date: The actual deal announcement or close date in YYYY-MM-DD format. Look for dates in the text such as press release dates, "announced today" references, or explicit close dates. If you absolutely cannot determine the date, skip the deal entirely — do NOT use today's date as a fallback.
 - source_url: The URL this was scraped from (provided below)
 
 IMPORTANT RULES:
