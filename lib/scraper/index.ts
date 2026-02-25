@@ -58,13 +58,11 @@ export async function runScraper(): Promise<ScraperResult> {
     };
   }
 
-  // 3. Fetch all deals from DB for dedup (no date cutoff — catches re-announced deals)
+  // 3. Fetch all deals from DB for dedup — including soft-deleted ones so
+  //    manually deleted deals don't get re-inserted by the scraper
   console.log("\n=== Deduplicating against existing deals ===");
 
   const existingRows = await prisma.deal.findMany({
-    where: {
-      deleted_at: null,
-    },
     select: {
       id: true,
       company_name: true,
