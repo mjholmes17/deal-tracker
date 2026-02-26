@@ -146,7 +146,8 @@ async function notifySlack(deals: ExtractedDeal[]) {
     const amount = d.amount_raised
       ? `$${(d.amount_raised / 1_000_000).toFixed(0)}M`
       : "undisclosed";
-    const lines = [`\u2022 *${d.company_name}* \u2014 ${d.investor} \u2014 ${amount} \u2014 ${d.end_market}`];
+    const source = d.source_url ? ` (<${d.source_url}|source>)` : "";
+    const lines = [`\u2022 *${d.company_name}* \u2014 ${d.investor} \u2014 ${amount} \u2014 ${d.end_market}${source}`];
     if (d.description) {
       lines.push(`   _${d.description}_`);
     }
