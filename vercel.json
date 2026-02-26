@@ -2,7 +2,7 @@
   "crons": [
     {
       "path": "/api/deals/refresh",
-      "schedule": "0 14 * * *"
+      "schedule": "0 14 * * 1,3,5"
     }
   ]
 }

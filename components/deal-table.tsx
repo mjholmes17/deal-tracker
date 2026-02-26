@@ -381,7 +381,7 @@ export function DealTable({ initialDeals }: DealTableProps) {
                           Clear all filters
                         </button>
                       ) : (
-                        <p className="text-xs text-text-muted">Deals will appear here once the daily scraper runs.</p>
+                        <p className="text-xs text-text-muted">Deals will appear here once the scraper runs (Mon/Wed/Fri).</p>
                       )}
                     </div>
                   </td>

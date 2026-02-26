@@ -30,7 +30,7 @@ export async function runScraper(): Promise<ScraperResult> {
   const errors: string[] = [];
 
   console.log("=".repeat(60));
-  console.log("  Growth Equity Deal Tracker — Daily Scraper");
+  console.log("  Growth Equity Deal Tracker — Scraper (Mon/Wed/Fri)");
   console.log(`  ${new Date().toISOString()}`);
   console.log("=".repeat(60));
 
