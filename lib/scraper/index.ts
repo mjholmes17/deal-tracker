@@ -81,7 +81,7 @@ export async function runScraper(): Promise<ScraperResult> {
         : String(row.date),
   }));
 
-  console.log(`  Existing deals in last 30 days: ${existing.length}`);
+  console.log(`  Existing deals in DB (for dedup): ${existing.length}`);
 
   // 4. Deduplicate
   const { newDeals, skipped } = deduplicateDeals(allExtracted, existing);

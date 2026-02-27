@@ -58,5 +58,5 @@ End market is a dropdown. Initial values listed in @docs/PRD.md.
 - The deal table must feel like a spreadsheet — click any cell to edit, auto-save on blur
 - All CRUD operations go through API routes, never direct DB calls from components
 - Scraper runs Mon/Wed/Fri at 9:00 AM ET via cron
-- Deduplication: fuzzy match on company_name + investor within a 7-day window before inserting
+- Deduplication: fuzzy match on company_name + investor against all existing deals (including soft-deleted) before inserting
 - 61 competitor firms are tracked — full list in @docs/PRD.md
