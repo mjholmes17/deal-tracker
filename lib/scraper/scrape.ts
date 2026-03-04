@@ -1,9 +1,19 @@
 /**
  * Web scraping: fetch pages and extract clean text using cheerio.
+ * Also supports RSS feed parsing for sources with type "rss".
  */
 
 import * as cheerio from "cheerio";
+import RSSParser from "rss-parser";
 import { ScraperSource } from "./config";
+
+const rssParser = new RSSParser({
+  timeout: 15_000,
+  headers: {
+    "User-Agent":
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+  },
+});
 
 const USER_AGENT =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -54,6 +64,53 @@ function extractTextFromHtml(html: string, maxChars = 15_000): string {
   return lines.join("\n").slice(0, maxChars);
 }
 
+async function parseRssFeed(
+  source: ScraperSource,
+  maxChars = 15_000
+): Promise<ScrapeResult | null> {
+  try {
+    const feed = await rssParser.parseURL(source.url);
+    if (!feed.items || feed.items.length === 0) {
+      console.log(`  [WARN] No items in RSS feed: ${source.name}`);
+      return null;
+    }
+
+    const lines: string[] = [];
+    let charCount = 0;
+
+    for (let i = 0; i < feed.items.length; i++) {
+      const item = feed.items[i];
+      const date = item.isoDate
+        ? item.isoDate.slice(0, 10)
+        : item.pubDate ?? "unknown";
+      const block = [
+        `--- ITEM ${i + 1} ---`,
+        `Title: ${item.title ?? ""}`,
+        `Date: ${date}`,
+        `Link: ${item.link ?? ""}`,
+        `Description: ${(item.contentSnippet ?? item.content ?? "").slice(0, 1000)}`,
+      ].join("\n");
+
+      if (charCount + block.length > maxChars) break;
+      lines.push(block);
+      charCount += block.length;
+    }
+
+    const text = lines.join("\n\n");
+    if (text.length < 50) return null;
+
+    return {
+      source_name: source.name,
+      source_url: source.url,
+      text,
+    };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.log(`  [WARN] Failed to parse RSS ${source.url}: ${msg}`);
+    return null;
+  }
+}
+
 /**
  * Scrape all sources in parallel batches.
  * @param sources - list of sources to scrape
@@ -70,6 +127,9 @@ export async function scrapeAllSources(
     const batchResults = await Promise.allSettled(
       batch.map(async (source) => {
         console.log(`  Scraping: ${source.name}`);
+        if (source.type === "rss") {
+          return parseRssFeed(source);
+        }
         const html = await fetchPage(source.url);
         if (!html) return null;
         const text = extractTextFromHtml(html);

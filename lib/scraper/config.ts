@@ -7,23 +7,35 @@ export { END_MARKETS } from "@/lib/constants";
 export interface ScraperSource {
   name: string;
   url: string;
-  type: "news" | "firm";
+  type: "news" | "firm" | "rss";
 }
 
 export const NEWS_SOURCES: ScraperSource[] = [
+  // --- RSS feeds (more reliable than HTML listing pages) ---
   {
     name: "PR Newswire - Private Equity",
-    url: "https://www.prnewswire.com/news-releases/financial-services-latest-news/private-equity-list/",
-    type: "news",
+    url: "https://www.prnewswire.com/rss/financial-services-latest-news/private-equity-list.rss",
+    type: "rss",
   },
   {
-    name: "Business Wire - Private Equity",
-    url: "https://www.businesswire.com/portal/site/home/template.PAGE/news/",
-    type: "news",
+    name: "PR Newswire - Venture Capital",
+    url: "https://www.prnewswire.com/rss/financial-services-latest-news/venture-capital-list.rss",
+    type: "rss",
   },
   {
     name: "GlobeNewsWire - M&A",
-    url: "https://www.globenewswire.com/news-release/category/3/Mergers-and-Acquisitions",
+    url: "https://www.globenewswire.com/RssFeed/subjectcode/27-Mergers%20and%20Acquisitions/feedTitle/GlobeNewswire%20-%20Mergers%20And%20Acquisitions",
+    type: "rss",
+  },
+  {
+    name: "TechCrunch - Venture",
+    url: "https://techcrunch.com/category/venture/feed/",
+    type: "rss",
+  },
+  // --- HTML scrape (no reliable RSS available) ---
+  {
+    name: "Business Wire - Private Equity",
+    url: "https://www.businesswire.com/portal/site/home/template.PAGE/news/",
     type: "news",
   },
   {
@@ -34,11 +46,6 @@ export const NEWS_SOURCES: ScraperSource[] = [
   {
     name: "Axios Pro Rata",
     url: "https://www.axios.com/pro/deals",
-    type: "news",
-  },
-  {
-    name: "TechCrunch - Venture",
-    url: "https://techcrunch.com/category/venture/",
     type: "news",
   },
   {
@@ -59,6 +66,7 @@ export const NEWS_SOURCES: ScraperSource[] = [
 ];
 
 export const COMPETITOR_FIRM_URLS: ScraperSource[] = [
+  { name: "Accel-KKR", url: "https://www.accel-kkr.com/news/", type: "firm" },
   { name: "Aldrich Capital Partners", url: "https://www.aldrichcapital.com/news/", type: "firm" },
   { name: "Aquiline", url: "https://www.aquiline.com/news/", type: "firm" },
   { name: "Argentum Group", url: "https://www.argentumgroup.com/news/", type: "firm" },
@@ -67,7 +75,6 @@ export const COMPETITOR_FIRM_URLS: ScraperSource[] = [
   { name: "Battery Ventures (PE)", url: "https://www.battery.com/news/", type: "firm" },
   { name: "Blue Heron Capital", url: "https://www.blueheroncap.com/news", type: "firm" },
   { name: "Blueprint Equity", url: "https://www.blueprintequity.com/news", type: "firm" },
-  { name: "BVP Forge", url: "https://www.bvp.com/news", type: "firm" },
   { name: "Carrick Capital Partners", url: "https://www.carrickcapitalpartners.com/news/", type: "firm" },
   { name: "Catalyst Investors", url: "https://www.catalystinvestors.com/news/", type: "firm" },
   { name: "Centana Growth Partners", url: "https://centanagrowth.com/news/", type: "firm" },
