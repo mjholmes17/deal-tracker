@@ -46,12 +46,30 @@ export async function runScraper(): Promise<ScraperResult> {
   errors.push(...extractErrors);
   console.log(`\n>>> Total deals extracted: ${allExtracted.length}`);
 
-  if (allExtracted.length === 0) {
+  // Filter out deals with dates older than 7 days
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const recentDeals = allExtracted.filter((deal) => {
+    if (!deal.date) return false;
+    const dealDate = new Date(deal.date);
+    if (isNaN(dealDate.getTime()) || dealDate < sevenDaysAgo) {
+      console.log(`  [SKIP] Too old: ${deal.company_name} (${deal.date})`);
+      return false;
+    }
+    return true;
+  });
+  const staleSkipped = allExtracted.length - recentDeals.length;
+  if (staleSkipped > 0) {
+    console.log(`>>> Filtered out ${staleSkipped} stale deal(s) older than 7 days`);
+  }
+  const allFiltered = recentDeals;
+
+  if (allFiltered.length === 0) {
     console.log("\nNo deals to process. Done.");
     return {
       success: true,
       sourcesScraped: scraped.length,
-      dealsExtracted: 0,
+      dealsExtracted: allExtracted.length,
       dealsInserted: 0,
       errors,
       durationMs: Date.now() - start,
@@ -84,7 +102,7 @@ export async function runScraper(): Promise<ScraperResult> {
   console.log(`  Existing deals in DB (for dedup): ${existing.length}`);
 
   // 4. Deduplicate
-  const { newDeals, skipped } = deduplicateDeals(allExtracted, existing);
+  const { newDeals, skipped } = deduplicateDeals(allFiltered, existing);
   console.log(`\n>>> New unique deals: ${newDeals.length} (skipped ${skipped} duplicates)`);
 
   // 5. Insert new deals
