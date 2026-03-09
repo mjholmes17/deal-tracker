@@ -32,15 +32,15 @@ export const NEWS_SOURCES: ScraperSource[] = [
     url: "https://techcrunch.com/category/venture/feed/",
     type: "rss",
   },
+  {
+    name: "PE Hub",
+    url: "https://www.pehub.com/feed/",
+    type: "rss",
+  },
   // --- HTML scrape (no reliable RSS available) ---
   {
     name: "Business Wire - Private Equity",
     url: "https://www.businesswire.com/portal/site/home/template.PAGE/news/",
-    type: "news",
-  },
-  {
-    name: "PE Hub",
-    url: "https://www.pehub.com/",
     type: "news",
   },
   {

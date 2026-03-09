@@ -77,12 +77,21 @@ async function parseRssFeed(
 
     const lines: string[] = [];
     let charCount = 0;
+    const now = Date.now();
+    const MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
     for (let i = 0; i < feed.items.length; i++) {
       const item = feed.items[i];
       const date = item.isoDate
         ? item.isoDate.slice(0, 10)
         : item.pubDate ?? "unknown";
+
+      // Hard gate: skip RSS items older than 3 days
+      const itemDate = new Date(item.isoDate ?? item.pubDate ?? "");
+      if (!isNaN(itemDate.getTime()) && now - itemDate.getTime() > MAX_AGE_MS) {
+        continue;
+      }
+
       const block = [
         `--- ITEM ${i + 1} ---`,
         `Title: ${item.title ?? ""}`,
