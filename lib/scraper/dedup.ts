@@ -7,6 +7,7 @@
 
 import { ratio, token_set_ratio } from "fuzzball";
 import { ExtractedDeal } from "./extract";
+import { COMPETITOR_FIRMS } from "@/lib/constants";
 
 export interface ExistingDeal {
   id: string;
@@ -53,6 +54,47 @@ function isDuplicate(
   }
 
   return false;
+}
+
+/**
+ * Check if a deal's investor matches one of the tracked competitor firms.
+ * Uses token_set_ratio to handle name variations like
+ * "Insight" vs "Insight Partners" or "Lead Edge" vs "Lead Edge Capital".
+ */
+function isTrackedCompetitor(investor: string): boolean {
+  const inv = (investor || "").toLowerCase();
+  if (!inv) return false;
+
+  for (const firm of COMPETITOR_FIRMS) {
+    if (token_set_ratio(inv, firm.toLowerCase()) >= 80) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Filter deals to only those where the investor is a tracked competitor.
+ * Returns the filtered list and count of removed deals.
+ */
+export function filterToTrackedCompetitors(
+  deals: ExtractedDeal[]
+): { tracked: ExtractedDeal[]; removed: number } {
+  const tracked: ExtractedDeal[] = [];
+  let removed = 0;
+
+  for (const deal of deals) {
+    if (isTrackedCompetitor(deal.investor)) {
+      tracked.push(deal);
+    } else {
+      console.log(
+        `  [SKIP] Not a tracked competitor: "${deal.investor}" (${deal.company_name})`
+      );
+      removed++;
+    }
+  }
+
+  return { tracked, removed };
 }
 
 /**

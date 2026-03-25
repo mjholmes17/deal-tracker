@@ -24,6 +24,7 @@ export const DEAL_STATUSES = [
 ] as const;
 
 export const COMPETITOR_FIRMS = [
+  "Accel-KKR",
   "Aldrich Capital Partners",
   "Aquiline",
   "Argentum Group",
@@ -50,6 +51,7 @@ export const COMPETITOR_FIRMS = [
   "K1",
   "Kennet Partners (UK / EU)",
   "Lead Edge",
+  "Level Equity",
   "LLR Partners",
   "LoneTree Capital",
   "Long Ridge Equity Partners",

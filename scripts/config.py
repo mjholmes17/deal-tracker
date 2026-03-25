@@ -1,5 +1,7 @@
 """Scraper configuration: news sources and competitor firm URLs."""
 
+from thefuzz import fuzz
+
 # News sources to scan for growth equity deal announcements
 NEWS_SOURCES = [
     {
@@ -87,6 +89,69 @@ COMPETITOR_FIRM_URLS = [
     ("Vista Endeavor", "https://www.vistaequitypartners.com/news/"),
     ("Volition Capital", "https://www.volitioncapital.com/news/"),
 ]
+
+# Canonical competitor firm names (derived from COMPETITOR_FIRM_URLS)
+COMPETITOR_FIRM_NAMES = {name for name, _ in COMPETITOR_FIRM_URLS}
+
+# Common aliases / abbreviations that map to a canonical firm name.
+# When Claude extracts a deal with an alias, we normalize it to the canonical name.
+COMPETITOR_FIRM_ALIASES = {
+    "PSG Equity": "Providence Strategic Growth",
+    "PSG": "Providence Strategic Growth",
+    "Providence Strategic Growth (PSG)": "Providence Strategic Growth",
+    "Battery Ventures": "Battery Ventures (PE)",
+    "Battery": "Battery Ventures (PE)",
+    "Kennet Partners": "Kennet Partners (UK / EU)",
+    "Kennet": "Kennet Partners (UK / EU)",
+    "Insight Partners": "Insight",
+    "Mainsail Partners": "Mainsail",
+    "Riverside Acceleration Capital": "Riverside Acceleration",
+    "Long Ridge": "Long Ridge Equity Partners",
+    "Susquehanna Growth": "Susquehanna Growth Equity",
+    "SGE Partners": "Susquehanna Growth Equity",
+    "Vista Equity Partners": "Vista Endeavor",
+    "Vista Equity": "Vista Endeavor",
+    "Elephant Ventures": "Elephant",
+    "BVP": "BVP Forge",
+    "Bessemer": "BVP Forge",
+    "Bessemer Venture Partners": "BVP Forge",
+    "Summit": "Summit Partners",
+    "LLR": "LLR Partners",
+    "JMI": "JMI Equity",
+    "Lead Edge Capital": "Lead Edge",
+    "K1 Investment Management": "K1",
+    "GTCR": None,  # Explicitly NOT a competitor — do not match
+}
+
+
+def match_competitor_firm(investor: str, threshold: int = 80) -> str | None:
+    """Match an investor name to a competitor firm. Returns the canonical firm
+    name if matched, or None if the investor is not a tracked competitor.
+
+    Checks exact alias matches first, then fuzzy-matches against canonical names.
+    """
+    if not investor or investor.lower() in ("not specified", "undisclosed", "unknown", "n/a", ""):
+        return None
+
+    # Check aliases first (exact, case-insensitive)
+    for alias, canonical in COMPETITOR_FIRM_ALIASES.items():
+        if investor.lower() == alias.lower():
+            return canonical  # None if explicitly excluded
+
+    # Fuzzy match against canonical firm names
+    best_score = 0
+    best_match = None
+    for firm_name in COMPETITOR_FIRM_NAMES:
+        score = fuzz.ratio(investor.lower(), firm_name.lower())
+        if score > best_score:
+            best_score = score
+            best_match = firm_name
+
+    if best_score >= threshold:
+        return best_match
+
+    return None
+
 
 # End markets for classification
 END_MARKETS = [

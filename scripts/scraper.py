@@ -23,7 +23,7 @@ from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 from thefuzz import fuzz
 
-from config import COMPETITOR_FIRM_URLS, END_MARKETS, NEWS_SOURCES
+from config import COMPETITOR_FIRM_NAMES, COMPETITOR_FIRM_URLS, END_MARKETS, NEWS_SOURCES, match_competitor_firm
 
 # ── Setup ─────────────────────────────────────────────────────────────────
 
@@ -122,14 +122,19 @@ EXTRACTION_PROMPT = """You are a growth equity deal extraction assistant. Analyz
 
 For EACH deal found, extract:
 - company_name: The portfolio company receiving investment
-- investor: The PE/growth equity firm investing (must be one of the tracked firms if from a firm page)
+- investor: The PE/growth equity firm investing. MUST be one of the tracked competitor firms listed below.
 - amount_raised: Dollar amount in USD (number only, no formatting). Use null if undisclosed.
 - end_market: Classify into exactly one of these categories: {end_markets}
 - description: 1-2 sentence summary of what the company does
 - date: The announcement date in YYYY-MM-DD format. Use today's date if not specified.
 - source_url: The URL this was scraped from (provided below)
 
+TRACKED COMPETITOR FIRMS (only extract deals by these firms):
+{competitor_firms}
+
 IMPORTANT RULES:
+- ONLY extract deals where the investor is one of the tracked competitor firms listed above
+- Do NOT extract deals where the investor is unknown, unspecified, or not one of the tracked firms
 - Only extract GROWTH EQUITY or PRIVATE EQUITY deals (not venture/seed, not M&A/acquisitions, not debt)
 - The investor must be a PE/growth equity firm, not a strategic acquirer
 - Skip deals older than 30 days
@@ -154,6 +159,7 @@ def extract_deals_from_text(source_name: str, source_url: str, text: str) -> lis
     """Use Claude to extract structured deal data from scraped text."""
     prompt = EXTRACTION_PROMPT.format(
         end_markets=", ".join(END_MARKETS),
+        competitor_firms=", ".join(sorted(COMPETITOR_FIRM_NAMES)),
         source_name=source_name,
         source_url=source_url,
         today=datetime.now().strftime("%Y-%m-%d"),
@@ -311,13 +317,32 @@ def main():
         print("\nNo deals to process. Done.")
         return
 
-    # 3. Deduplicate
+    # 3. Filter to competitor firms only
+    print("\n=== Filtering to tracked competitor firms ===")
+    competitor_deals = []
+    for deal in all_extracted:
+        investor = deal.get("investor", "")
+        matched_firm = match_competitor_firm(investor)
+        if matched_firm:
+            deal["investor"] = matched_firm  # Normalize to canonical name
+            competitor_deals.append(deal)
+            print(f"  [KEEP] {deal.get('company_name')} / {matched_firm}")
+        else:
+            print(f"  [SKIP] Non-competitor investor: {deal.get('company_name')} / {investor}")
+
+    print(f"\n>>> Deals from tracked competitors: {len(competitor_deals)}")
+
+    if not competitor_deals:
+        print("\nNo competitor deals to process. Done.")
+        return
+
+    # 4. Deduplicate
     print("\n=== Deduplicating against existing deals ===")
     existing = get_existing_deals()
     print(f"  Existing deals in last 30 days: {len(existing)}")
 
     new_deals = []
-    for deal in all_extracted:
+    for deal in competitor_deals:
         if is_duplicate(deal, existing):
             print(f"  [SKIP] Duplicate: {deal.get('company_name')} / {deal.get('investor')}")
         else:
@@ -327,7 +352,7 @@ def main():
 
     print(f"\n>>> New unique deals: {len(new_deals)}")
 
-    # 4. Insert (or print in dry-run mode)
+    # 5. Insert (or print in dry-run mode)
     if dry_run:
         print("\n=== DRY RUN — Deals that would be inserted ===")
         for d in new_deals:

@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 import { ALL_SOURCES } from "./config";
 import { scrapeAllSources } from "./scrape";
 import { extractDealsFromSources, ExtractedDeal } from "./extract";
-import { deduplicateDeals, ExistingDeal } from "./dedup";
+import { deduplicateDeals, ExistingDeal, filterToTrackedCompetitors } from "./dedup";
 
 export interface ScraperResult {
   success: boolean;
@@ -62,7 +62,16 @@ export async function runScraper(): Promise<ScraperResult> {
   if (staleSkipped > 0) {
     console.log(`>>> Filtered out ${staleSkipped} stale deal(s) older than 7 days`);
   }
-  const allFiltered = recentDeals;
+  // Filter to only deals from tracked competitor firms
+  console.log("\n=== Filtering to tracked competitors ===");
+  const { tracked, removed: competitorRemoved } =
+    filterToTrackedCompetitors(recentDeals);
+  if (competitorRemoved > 0) {
+    console.log(
+      `>>> Filtered out ${competitorRemoved} deal(s) from non-tracked investors`
+    );
+  }
+  const allFiltered = tracked;
 
   if (allFiltered.length === 0) {
     console.log("\nNo deals to process. Done.");
