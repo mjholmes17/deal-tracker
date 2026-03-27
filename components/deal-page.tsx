@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
+import Link from "next/link";
 import { Deal } from "@/lib/types";
 import { DealTable } from "./deal-table";
 import { AddDealModal } from "./add-deal-modal";
@@ -9,9 +10,10 @@ import { LogoutButton } from "./logout-button";
 interface DealPageProps {
   initialDeals: Deal[];
   lastScanAt: string | null;
+  pendingCount: number;
 }
 
-export function DealPage({ initialDeals, lastScanAt }: DealPageProps) {
+export function DealPage({ initialDeals, lastScanAt, pendingCount }: DealPageProps) {
   const [deals, setDeals] = useState<Deal[]>(initialDeals);
   const [modalOpen, setModalOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -44,7 +46,7 @@ export function DealPage({ initialDeals, lastScanAt }: DealPageProps) {
         setLastScan(new Date().toISOString());
         setRefreshResult(
           data.newDeals > 0
-            ? `Found ${data.newDeals} new deal(s)!`
+            ? `Found ${data.newDeals} new deal(s) pending review`
             : "No new deals found."
         );
       } else {
@@ -117,6 +119,15 @@ export function DealPage({ initialDeals, lastScanAt }: DealPageProps) {
               <span className="text-xs text-brand-300">
                 Crawling the web — this may take a few minutes
               </span>
+            )}
+            {pendingCount > 0 && (
+              <Link
+                href="/review"
+                className="px-3 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-200 text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                {pendingCount} pending review
+              </Link>
             )}
             <button
               onClick={() => setModalOpen(true)}

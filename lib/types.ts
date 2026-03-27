@@ -15,3 +15,16 @@ export interface Deal {
   updated_at: string;
   deleted_at: string | null;
 }
+
+export interface PendingDeal {
+  id: string;
+  date: string;
+  company_name: string;
+  investor: string;
+  amount_raised: number | null;
+  end_market: string;
+  description: string;
+  source_url: string;
+  batch_id: string;
+  scraped_at: string;
+}

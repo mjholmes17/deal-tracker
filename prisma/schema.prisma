@@ -35,6 +35,21 @@ model ScanLog {
   @@map("scan_logs")
 }
 
+model PendingDeal {
+  id            String   @id @default(uuid())
+  date          DateTime @db.Date
+  company_name  String   @db.VarChar(255)
+  investor      String   @db.VarChar(255)
+  amount_raised Decimal? @db.Decimal(15, 2)
+  end_market    String   @db.VarChar(100)
+  description   String   @db.Text
+  source_url    String   @db.VarChar(500)
+  batch_id      String   @db.VarChar(36)
+  scraped_at    DateTime @default(now())
+
+  @@map("pending_deals")
+}
+
 model ScrapeSource {
   id              String    @id @default(uuid())
   name            String    @db.VarChar(255)

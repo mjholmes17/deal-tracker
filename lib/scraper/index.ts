@@ -1,5 +1,8 @@
 /**
- * Scraper orchestrator: runs the full scrape → extract → dedup → insert pipeline.
+ * Scraper orchestrator: runs the full scrape → extract → dedup → stage pipeline.
+ *
+ * Deals land in `pending_deals` for manual review. Once approved via the
+ * /review page, they move to `deals` and the firm Slack channel is notified.
  */
 
 import { prisma } from "@/lib/db";
@@ -12,7 +15,7 @@ export interface ScraperResult {
   success: boolean;
   sourcesScraped: number;
   dealsExtracted: number;
-  dealsInserted: number;
+  dealsPending: number;
   errors: string[];
   durationMs: number;
 }
@@ -21,9 +24,10 @@ export interface ScraperResult {
  * Run the full scraper pipeline:
  * 1. Scrape all sources (parallel batches of 10)
  * 2. Extract deals via Claude (parallel batches of 5)
- * 3. Fetch recent deals from DB for dedup
- * 4. Deduplicate
- * 5. Insert new deals
+ * 3. Filter stale + non-competitor deals
+ * 4. Dedup against deals AND pending_deals
+ * 5. Insert into pending_deals for review
+ * 6. Notify #deal-review Slack channel
  */
 export async function runScraper(): Promise<ScraperResult> {
   const start = Date.now();
@@ -79,26 +83,29 @@ export async function runScraper(): Promise<ScraperResult> {
       success: true,
       sourcesScraped: scraped.length,
       dealsExtracted: allExtracted.length,
-      dealsInserted: 0,
+      dealsPending: 0,
       errors,
       durationMs: Date.now() - start,
     };
   }
 
-  // 3. Fetch all deals from DB for dedup — including soft-deleted ones so
-  //    manually deleted deals don't get re-inserted by the scraper
-  console.log("\n=== Deduplicating against existing deals ===");
+  // 3. Fetch all deals from BOTH tables for dedup — including soft-deleted
+  //    ones so manually deleted deals don't get re-inserted by the scraper
+  console.log("\n=== Deduplicating against existing + pending deals ===");
 
-  const existingRows = await prisma.deal.findMany({
-    select: {
-      id: true,
-      company_name: true,
-      investor: true,
-      date: true,
-    },
-  });
+  const [existingDealRows, existingPendingRows] = await Promise.all([
+    prisma.deal.findMany({
+      select: { id: true, company_name: true, investor: true, date: true },
+    }),
+    prisma.pendingDeal.findMany({
+      select: { id: true, company_name: true, investor: true, date: true },
+    }),
+  ]);
 
-  const existing: ExistingDeal[] = existingRows.map((row) => ({
+  const existing: ExistingDeal[] = [
+    ...existingDealRows,
+    ...existingPendingRows,
+  ].map((row) => ({
     id: row.id,
     company_name: row.company_name,
     investor: row.investor,
@@ -114,15 +121,16 @@ export async function runScraper(): Promise<ScraperResult> {
   const { newDeals, skipped } = deduplicateDeals(allFiltered, existing);
   console.log(`\n>>> New unique deals: ${newDeals.length} (skipped ${skipped} duplicates)`);
 
-  // 5. Insert new deals
+  // 5. Insert into pending_deals for review
   let insertedCount = 0;
   if (newDeals.length > 0) {
-    console.log("\n=== Inserting new deals into database ===");
+    console.log("\n=== Inserting new deals into pending_deals ===");
+    const batchId = crypto.randomUUID();
     try {
-      const rows = newDeals.map(dealToRow);
-      const result = await prisma.deal.createMany({ data: rows });
+      const rows = newDeals.map((deal) => pendingDealToRow(deal, batchId));
+      const result = await prisma.pendingDeal.createMany({ data: rows });
       insertedCount = result.count;
-      console.log(`  Inserted ${insertedCount} deal(s)`);
+      console.log(`  Inserted ${insertedCount} pending deal(s) (batch: ${batchId})`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.log(`  [ERROR] Insert failed: ${msg}`);
@@ -130,9 +138,9 @@ export async function runScraper(): Promise<ScraperResult> {
     }
   }
 
-  // 6. Notify Slack
+  // 6. Notify #deal-review Slack channel
   if (insertedCount > 0) {
-    await notifySlack(newDeals.slice(0, insertedCount));
+    await notifyReviewSlack(newDeals.slice(0, insertedCount), insertedCount);
   }
 
   const durationMs = Date.now() - start;
@@ -149,20 +157,81 @@ export async function runScraper(): Promise<ScraperResult> {
     console.log(`  [WARN] Failed to log scan: ${e instanceof Error ? e.message : e}`);
   }
   console.log(`\n${"=".repeat(60)}`);
-  console.log(`  Done in ${(durationMs / 1000).toFixed(1)}s — ${insertedCount} new deal(s)`);
+  console.log(`  Done in ${(durationMs / 1000).toFixed(1)}s — ${insertedCount} deal(s) pending review`);
   console.log("=".repeat(60));
 
   return {
     success: true,
     sourcesScraped: scraped.length,
     dealsExtracted: allExtracted.length,
-    dealsInserted: insertedCount,
+    dealsPending: insertedCount,
     errors,
     durationMs,
   };
 }
 
-async function notifySlack(deals: ExtractedDeal[]) {
+/**
+ * Notify the private #deal-review Slack channel that new deals need review.
+ */
+async function notifyReviewSlack(deals: ExtractedDeal[], count: number) {
+  const webhookUrl = process.env.SLACK_REVIEW_WEBHOOK_URL;
+  if (!webhookUrl) {
+    console.log("  [SKIP] SLACK_REVIEW_WEBHOOK_URL not set, skipping review notification");
+    return;
+  }
+
+  const dealLines = deals.slice(0, 10).flatMap((d) => {
+    const amount = d.amount_raised
+      ? `$${(d.amount_raised / 1_000_000).toFixed(0)}M`
+      : "undisclosed";
+    return [`\u2022 *${d.company_name}* \u2014 ${d.investor} \u2014 ${amount} \u2014 ${d.end_market}`];
+  });
+
+  if (count > 10) {
+    dealLines.push(`_...and ${count - 10} more_`);
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://growthequitydeals.com";
+
+  const text = [
+    `\ud83d\udd0d *${count} new deal${count === 1 ? "" : "s"} pending review*`,
+    "",
+    ...dealLines,
+    "",
+    `<${appUrl}/review|Review and approve \u2192>`,
+  ].join("\n");
+
+  try {
+    const resp = await fetch(webhookUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    if (resp.ok) {
+      console.log("  Review Slack notification sent");
+    } else {
+      console.log(`  [WARN] Review Slack notification failed: ${resp.status}`);
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.log(`  [WARN] Review Slack notification error: ${msg}`);
+  }
+}
+
+/**
+ * Notify the firm-wide Slack channel about approved deals.
+ * Exported so the approval API route can call it after deals are approved.
+ */
+export async function notifyFirmSlack(
+  deals: {
+    company_name: string;
+    investor: string;
+    amount_raised: number | null;
+    end_market: string;
+    description: string;
+    source_url: string;
+  }[]
+) {
   const webhookUrl = process.env.SLACK_WEBHOOK_URL;
   if (!webhookUrl) {
     console.log("  [SKIP] SLACK_WEBHOOK_URL not set, skipping notification");
@@ -206,7 +275,7 @@ async function notifySlack(deals: ExtractedDeal[]) {
   }
 }
 
-function dealToRow(deal: ExtractedDeal) {
+function pendingDealToRow(deal: ExtractedDeal, batchId: string) {
   return {
     date: new Date(deal.date || new Date().toISOString().slice(0, 10)),
     company_name: deal.company_name || "",
@@ -215,7 +284,6 @@ function dealToRow(deal: ExtractedDeal) {
     end_market: deal.end_market || "Other",
     description: deal.description || "",
     source_url: deal.source_url || "",
-    status: null,
-    comments: "",
+    batch_id: batchId,
   };
 }

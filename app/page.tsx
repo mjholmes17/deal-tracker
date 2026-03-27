@@ -35,12 +35,25 @@ async function getLastScanAt(): Promise<string | null> {
   }
 }
 
+async function getPendingCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from("pending_deals")
+    .select("*", { count: "exact", head: true });
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
 export default async function Home() {
-  const [deals, lastScanAt] = await Promise.all([getDeals(), getLastScanAt()]);
+  const [deals, lastScanAt, pendingCount] = await Promise.all([
+    getDeals(),
+    getLastScanAt(),
+    getPendingCount(),
+  ]);
 
   return (
     <div className="min-h-screen flex flex-col">
-      <DealPage initialDeals={deals} lastScanAt={lastScanAt} />
+      <DealPage initialDeals={deals} lastScanAt={lastScanAt} pendingCount={pendingCount} />
 
       {/* Footer */}
       <footer className="border-t border-border-default bg-white">

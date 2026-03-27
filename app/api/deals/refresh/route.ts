@@ -27,8 +27,10 @@ async function runScraperAndRespond(): Promise<NextResponse> {
 
     return NextResponse.json({
       success: result.success,
-      newDeals: result.dealsInserted,
-      message: `Scraper completed. ${result.dealsInserted} new deal(s) found.`,
+      newDeals: result.dealsPending,
+      message: result.dealsPending > 0
+        ? `Scraper completed. ${result.dealsPending} new deal(s) pending review.`
+        : "Scraper completed. No new deals found.",
       details: {
         sourcesScraped: result.sourcesScraped,
         dealsExtracted: result.dealsExtracted,
