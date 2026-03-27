@@ -5,6 +5,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { END_MARKETS } from "./config";
 import { ScrapeResult } from "./scrape";
+import { COMPETITOR_FIRMS } from "@/lib/constants";
 
 export interface ExtractedDeal {
   company_name: string;
@@ -18,9 +19,14 @@ export interface ExtractedDeal {
 
 const EXTRACTION_PROMPT = `You are a growth equity deal extraction assistant. Analyze the following text and extract ONLY deals that are clearly NEW investment announcements — meaning there is explicit language like "announces investment in", "closes funding round", "raises Series X", "secures growth equity investment", or similar.
 
-For EACH confirmed new deal announcement, extract:
+IMPORTANT: Only extract deals where the INVESTOR is one of these tracked competitor firms:
+{competitor_firms}
+
+If a deal's investor is NOT on this list, DO NOT extract it. Ignore deals from all other firms.
+
+For EACH confirmed new deal announcement from a tracked competitor, extract:
 - company_name: The portfolio company receiving investment
-- investor: The PE/growth equity firm investing
+- investor: The PE/growth equity firm investing (MUST be from the tracked list above)
 - amount_raised: Dollar amount in USD (number only, no formatting). Use null if undisclosed.
 - end_market: Classify into exactly one of these categories: {end_markets}
 - description: 1-2 sentence summary of what the company does
@@ -28,6 +34,7 @@ For EACH confirmed new deal announcement, extract:
 - source_url: The URL this was scraped from (provided below)
 
 CRITICAL RULES:
+- ONLY extract deals where the investor is on the tracked competitor list above
 - ONLY extract deals that are clearly NEW announcements with announcement language and a verifiable date
 - Do NOT extract companies simply listed on a portfolio page, team page, or case study — these are existing investments, not new deals
 - Do NOT extract deals where the only evidence is a company name appearing in a list of portfolio companies
@@ -51,7 +58,11 @@ If no deals found, respond with: []
 
 function buildPrompt(source: ScrapeResult): string {
   const today = new Date().toISOString().slice(0, 10);
-  return EXTRACTION_PROMPT.replace("{end_markets}", END_MARKETS.join(", "))
+  return EXTRACTION_PROMPT.replace(
+    "{competitor_firms}",
+    [...COMPETITOR_FIRMS].sort().join(", ")
+  )
+    .replace("{end_markets}", END_MARKETS.join(", "))
     .replace("{source_name}", source.source_name)
     .replace("{source_url}", source.source_url)
     .replace("{today}", today)

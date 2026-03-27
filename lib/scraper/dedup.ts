@@ -58,15 +58,27 @@ function isDuplicate(
 
 /**
  * Check if a deal's investor matches one of the tracked competitor firms.
- * Uses token_set_ratio to handle name variations like
- * "Insight" vs "Insight Partners" or "Lead Edge" vs "Lead Edge Capital".
+ *
+ * Two-tier matching:
+ * 1. Exact substring — if the investor text contains a firm name (or vice
+ *    versa), it's a match. Handles "Insight" ⊂ "Insight Partners" cleanly.
+ * 2. Fuzzy fallback — token_set_ratio at 90 (raised from 80) catches typos
+ *    and minor variations without the false positives that 80 produced.
  */
 function isTrackedCompetitor(investor: string): boolean {
-  const inv = (investor || "").toLowerCase();
+  const inv = (investor || "").toLowerCase().trim();
   if (!inv) return false;
 
   for (const firm of COMPETITOR_FIRMS) {
-    if (token_set_ratio(inv, firm.toLowerCase()) >= 80) {
+    const f = firm.toLowerCase();
+
+    // Fast path: exact substring in either direction
+    if (inv.includes(f) || f.includes(inv)) {
+      return true;
+    }
+
+    // Fuzzy fallback with tighter threshold
+    if (token_set_ratio(inv, f) >= 90) {
       return true;
     }
   }
