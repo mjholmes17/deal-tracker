@@ -38,7 +38,8 @@ async function getLastScanAt(): Promise<string | null> {
 async function getPendingCount(): Promise<number> {
   const { count, error } = await supabase
     .from("pending_deals")
-    .select("*", { count: "exact", head: true });
+    .select("*", { count: "exact", head: true })
+    .is("rejected_at", null);
 
   if (error) return 0;
   return count ?? 0;

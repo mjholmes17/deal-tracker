@@ -8,6 +8,7 @@ async function getPendingDeals(): Promise<PendingDeal[]> {
   const { data, error } = await supabase
     .from("pending_deals")
     .select("*")
+    .is("rejected_at", null)
     .order("scraped_at", { ascending: false });
 
   if (error) {
