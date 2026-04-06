@@ -7,11 +7,11 @@ import { notifyFirmSlack } from "@/lib/scraper";
 export async function POST(req: NextRequest) {
   const body = await req.json();
 
-  // Fetch the pending deals to approve
-  let query = supabase.from("pending_deals").select("*");
+  // Fetch the pending deals to approve (always exclude rejected deals)
+  let query = supabase.from("pending_deals").select("*").is("rejected_at", null);
 
   if (body.all === true) {
-    // Approve all — no filter needed
+    // Approve all non-rejected
   } else if (Array.isArray(body.ids) && body.ids.length > 0) {
     query = query.in("id", body.ids);
   } else {

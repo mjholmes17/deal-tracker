@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   const { error } = await supabase
     .from("pending_deals")
-    .delete()
+    .update({ rejected_at: new Date().toISOString() })
     .in("id", body.ids);
 
   if (error) {

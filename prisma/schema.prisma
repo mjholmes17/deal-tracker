@@ -36,16 +36,17 @@ model ScanLog {
 }
 
 model PendingDeal {
-  id            String   @id @default(uuid())
-  date          DateTime @db.Date
-  company_name  String   @db.VarChar(255)
-  investor      String   @db.VarChar(255)
-  amount_raised Decimal? @db.Decimal(15, 2)
-  end_market    String   @db.VarChar(100)
-  description   String   @db.Text
-  source_url    String   @db.VarChar(500)
-  batch_id      String   @db.VarChar(36)
-  scraped_at    DateTime @default(now())
+  id            String    @id @default(uuid())
+  date          DateTime  @db.Date
+  company_name  String    @db.VarChar(255)
+  investor      String    @db.VarChar(255)
+  amount_raised Decimal?  @db.Decimal(15, 2)
+  end_market    String    @db.VarChar(100)
+  description   String    @db.Text
+  source_url    String    @db.VarChar(500)
+  batch_id      String    @db.VarChar(36)
+  scraped_at    DateTime  @default(now())
+  rejected_at   DateTime?
 
   @@map("pending_deals")
 }
