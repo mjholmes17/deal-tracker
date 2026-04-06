@@ -1,50 +1,46 @@
-import { NextRequest, NextResponse } from "next/server";
-import { runScraper } from "@/lib/scraper";
+import { NextResponse } from "next/server";
 
-// Allow up to 5 minutes for the scraper to complete (Vercel Pro)
-export const maxDuration = 300;
-
-// GET /api/deals/refresh — Vercel cron trigger (authenticated via CRON_SECRET)
-export async function GET(req: NextRequest) {
-  const authHeader = req.headers.get("authorization");
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// POST /api/deals/refresh — trigger GitHub Actions scraper workflow
+export async function POST() {
+  const pat = process.env.GITHUB_PAT;
+  if (!pat) {
+    return NextResponse.json(
+      { success: false, message: "GITHUB_PAT not configured" },
+      { status: 500 }
+    );
   }
 
-  return runScraperAndRespond();
-}
-
-// POST /api/deals/refresh — manual trigger from UI (session-authenticated via middleware)
-export async function POST() {
-  return runScraperAndRespond();
-}
-
-async function runScraperAndRespond(): Promise<NextResponse> {
   try {
-    const result = await runScraper();
+    const resp = await fetch(
+      "https://api.github.com/repos/mjholmes17/deal-tracker/actions/workflows/scraper.yml/dispatches",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${pat}`,
+          Accept: "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+        },
+        body: JSON.stringify({ ref: "main" }),
+      }
+    );
+
+    if (!resp.ok) {
+      const body = await resp.text();
+      console.error("GitHub Actions dispatch failed:", resp.status, body);
+      return NextResponse.json(
+        { success: false, message: "Failed to trigger scraper" },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({
-      success: result.success,
-      newDeals: result.dealsPending,
-      message: result.dealsPending > 0
-        ? `Scraper completed. ${result.dealsPending} new deal(s) pending review.`
-        : "Scraper completed. No new deals found.",
-      details: {
-        sourcesScraped: result.sourcesScraped,
-        dealsExtracted: result.dealsExtracted,
-        errors: result.errors,
-        durationMs: result.durationMs,
-      },
+      success: true,
+      message: "Scraper triggered — you'll be notified on Slack when complete.",
     });
   } catch (e) {
-    console.error("Scraper failed:", e instanceof Error ? e.message : String(e));
+    console.error("GitHub Actions dispatch error:", e instanceof Error ? e.message : String(e));
     return NextResponse.json(
-      {
-        success: false,
-        message: "Scraper failed. Check server logs.",
-      },
+      { success: false, message: "Failed to trigger scraper" },
       { status: 500 }
     );
   }

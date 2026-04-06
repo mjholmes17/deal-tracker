@@ -32,28 +32,12 @@ export function DealPage({ initialDeals, lastScanAt, pendingCount }: DealPagePro
       const data = await res.json();
 
       if (data.success) {
-        // Re-fetch all deals to pick up any new ones
-        const dealsRes = await fetch("/api/deals");
-        if (dealsRes.ok) {
-          const freshDeals = await dealsRes.json();
-          setDeals(
-            freshDeals.map((d: Record<string, unknown>) => ({
-              ...d,
-              amount_raised: d.amount_raised ? Number(d.amount_raised) : null,
-            }))
-          );
-        }
-        setLastScan(new Date().toISOString());
-        setRefreshResult(
-          data.newDeals > 0
-            ? `Found ${data.newDeals} new deal(s) pending review`
-            : "No new deals found."
-        );
+        setRefreshResult("Scraper triggered — you'll be notified on Slack when complete.");
       } else {
-        setRefreshResult("Refresh failed. Check server logs.");
+        setRefreshResult("Failed to trigger scraper. Check server logs.");
       }
     } catch {
-      setRefreshResult("Refresh failed. Is the scraper configured?");
+      setRefreshResult("Failed to trigger scraper. Is the server configured?");
     } finally {
       setRefreshing(false);
       setTimeout(() => setRefreshResult(null), 5000);
@@ -117,7 +101,7 @@ export function DealPage({ initialDeals, lastScanAt, pendingCount }: DealPagePro
             </button>
             {refreshing && (
               <span className="text-xs text-brand-300">
-                Crawling the web — this may take a few minutes
+                Triggering scraper...
               </span>
             )}
             {pendingCount > 0 && (

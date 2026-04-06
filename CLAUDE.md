@@ -11,8 +11,8 @@ Full product spec: @docs/PRD.md
 - **Database:** PostgreSQL (hosted on Supabase)
 - **ORM:** Prisma
 - **Auth:** Simple session-based auth with shared team credential (env var)
-- **Scraping:** Python scripts + Claude API for extraction/classification
-- **Hosting:** Vercel (frontend + API) or Railway
+- **Scraping:** TypeScript scraper + Claude API for extraction/classification, runs via GitHub Actions
+- **Hosting:** Vercel Hobby (frontend + API)
 
 ## Commands
 
@@ -57,6 +57,8 @@ End market is a dropdown. Initial values listed in @docs/PRD.md.
 
 - The deal table must feel like a spreadsheet — click any cell to edit, auto-save on blur
 - All CRUD operations go through API routes, never direct DB calls from components
-- Scraper runs Mon/Wed/Fri at 9:00 AM ET via cron
+- Scraper runs Mon/Wed/Fri at 9:00 AM ET via GitHub Actions (`.github/workflows/scraper.yml`)
+- The UI "Refresh Deals" button triggers the GitHub Actions workflow via `workflow_dispatch` (fire-and-forget)
+- Scraper can also be triggered manually from the GitHub Actions UI
 - Deduplication: fuzzy match on company_name + investor against all existing deals (including soft-deleted) before inserting
 - 61 competitor firms are tracked — full list in @docs/PRD.md
